@@ -1,12 +1,11 @@
 # ─────────────────────────────────────────────────────────────
-#  config.py  –  All tunable thresholds & settings
+#  config.py  –  All settings for the Raspberry Pi touchscreen
+#  drowsiness detector.
 #
-#  THREE WARNING CONDITIONS:
-#    1. Eyes closed > 2 seconds              → RED warning
-#    2. 3 yawns within a 60-second window     → GREEN warning
-#       (window restarts from 0 the INSTANT the warning fires —
-#        i.e. it's a sliding/resetting window, not a fixed clock cycle)
-#    3. No face detected                      → RED warning (instant)
+#  Values marked "RUNTIME" are the STARTING values only — the
+#  touchscreen Sensitivity/time-adjust buttons change them live,
+#  in memory, while the app runs. They are not re-saved to this
+#  file (restarting the app reloads these defaults).
 # ─────────────────────────────────────────────────────────────
 
 # ── Model ────────────────────────────────────────────────────
@@ -23,47 +22,61 @@ MIN_FACE_PRESENCE_CONFIDENCE  = 0.6
 MIN_TRACKING_CONFIDENCE       = 0.6
 
 # ── Feature 1: Eyes-closed timer ──────────────────────────────
-EAR_THRESHOLD        = 0.22   # below this = eye considered closed
-EYES_CLOSED_SEC       = 2.0    # eyes closed continuously ≥ this → RED warning
+EAR_THRESHOLD          = 0.22   # below this = eye considered closed
+EYES_CLOSED_SEC_DEFAULT = 2.0   # RUNTIME: adjustable via +/- buttons on screen
+EYES_CLOSED_SEC_MIN     = 0.5
+EYES_CLOSED_SEC_MAX     = 5.0
+EYES_CLOSED_SEC_STEP    = 0.5
 
-# ── Feature 2: Yawn counter ────────────────────────────────────
-MAR_THRESHOLD        = 0.65   # above this = mouth considered open (yawn)
-MAR_CONSEC_FRAMES     = 12     # frames mouth must stay open to count as ONE yawn
+# ── Feature 2: Yawn counter (sliding window) ──────────────────
+MAR_THRESHOLD       = 0.65
+MAR_CONSEC_FRAMES    = 12
 
-# Sliding window: yawns are counted for up to YAWN_WINDOW_SEC seconds.
-# The moment the count reaches YAWN_COUNT_TRIGGER, the GREEN warning
-# fires AND the count immediately resets to 0, with a brand-new
-# YAWN_WINDOW_SEC window starting right then (not waiting for the old
-# window to finish naturally).
-YAWN_WINDOW_SEC       = 60     # ← ADJUSTABLE: window length (seconds)
-YAWN_COUNT_TRIGGER    = 3      # this many yawns within the window → GREEN warning
+YAWN_WINDOW_SEC_DEFAULT = 60    # RUNTIME: adjustable via +/- buttons on screen
+YAWN_WINDOW_SEC_MIN     = 10
+YAWN_WINDOW_SEC_MAX     = 180
+YAWN_WINDOW_SEC_STEP    = 10
 
-# How long the GREEN warning banner stays visible once triggered
-YAWN_WARNING_DISPLAY_SEC = 5   # ← ADJUSTABLE: warning auto-hides after this long
+YAWN_COUNT_TRIGGER        = 3
+YAWN_WARNING_DISPLAY_SEC  = 5
 
-# ── Feature 3: Face-not-detected warning ───────────────────────
-# Fires the instant a frame has no detected face (no debounce delay).
+# ── Feature 3: No-face warning ─────────────────────────────────
 NO_FACE_WARNING_ENABLED = True
 
+# ── Sensitivity presets ────────────────────────────────────────
+# The on-screen "Sensitivity" button cycles through these presets,
+# each adjusting EAR_THRESHOLD and MAR_THRESHOLD together.
+SENSITIVITY_PRESETS = {
+    "Low":    {"ear": 0.18, "mar": 0.75},   # harder to trigger (fewer false alarms)
+    "Medium": {"ear": 0.22, "mar": 0.65},   # default / balanced
+    "High":   {"ear": 0.26, "mar": 0.55},   # easier to trigger (more sensitive)
+}
+SENSITIVITY_DEFAULT = "Medium"
+
 # ── Warning sound ──────────────────────────────────────────────
-# Continuous short beeps play for as long as ANY warning is active.
-BEEP_INTERVAL_SEC = 0.4        # gap between beeps while a warning is active
-ALARM_SOUND_PATH  = None       # optional WAV/MP3 path; None → system beep fallback
+BEEP_INTERVAL_SEC = 0.4
+ALARM_SOUND_PATH  = None        # optional WAV/MP3 path; None → system beep
 
-# ── Camera ───────────────────────────────────────────────────
+# ── Camera (capture resolution — kept low for Pi 4 CPU headroom) ─
 CAMERA_INDEX = 0
-FRAME_WIDTH  = 640
-FRAME_HEIGHT = 480
+FRAME_WIDTH  = 320
+FRAME_HEIGHT = 240
 
-# ── Display ──────────────────────────────────────────────────
-WINDOW_TITLE = "Drowsiness Detection  |  Eyes-Closed + Yawn Counter"
+# ── GUI / touchscreen ──────────────────────────────────────────
+# Set to match your panel. Confirmed for the 3.5" ILI9486/XPT2046
+# 480x320 SPI panel (Fmax 32MHz) — see README for the dtoverlay
+# setup. Change these two values if you swap to a different panel.
+SCREEN_WIDTH   = 480
+SCREEN_HEIGHT  = 320
+FULLSCREEN     = True           # kiosk mode; set False while developing on a desktop
+SNAPSHOT_FPS   = 1.0            # how often the camera panel image updates (frames/sec)
+GUI_POLL_MS    = 150            # how often the GUI refreshes text/color state (milliseconds)
+
+WINDOW_TITLE = "Drowsiness Monitor"
 
 # ── MediaPipe 478-landmark indices ────────────────────────────
 RIGHT_EYE = [362, 385, 387, 263, 373, 380]
 LEFT_EYE  = [ 33, 160, 158, 133, 153, 144]
-
-RIGHT_EYE_CONTOUR = [362,382,381,380,374,373,390,249,263,466,388,387,386,385,384,398]
-LEFT_EYE_CONTOUR  = [ 33, 7, 163,144,145,153,154,155,133,173,157,158,159,160,161,246]
 
 MOUTH_TOP     = 13
 MOUTH_BOTTOM  = 14
