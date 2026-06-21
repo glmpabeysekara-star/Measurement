@@ -16,6 +16,7 @@ import cv2
 import config
 from detector import DrowsinessDetector
 from alarm import AlarmSystem
+from gpio_output import GPIOWarningOutputs
 
 
 class DetectionWorker:
@@ -35,6 +36,7 @@ class DetectionWorker:
 
         self._detector: DrowsinessDetector | None = None
         self._alarm = AlarmSystem(config.ALARM_SOUND_PATH, config.BEEP_INTERVAL_SEC)
+        self._gpio = GPIOWarningOutputs()
 
         self._cap: cv2.VideoCapture | None = None
 
@@ -52,6 +54,7 @@ class DetectionWorker:
         self.settings.set_running(False)
         self._stop_event.set()
         self._alarm.stop()
+        self._gpio.update(eyes_closed=False, yawn=False, no_face=False)
 
     def shutdown(self):
         """Full teardown — call once when the app is closing."""
@@ -62,6 +65,7 @@ class DetectionWorker:
             self._cap.release()
         if self._detector is not None:
             self._detector.close()
+        self._gpio.close()
 
     def reset_counters(self):
         if self._detector is not None:
@@ -97,6 +101,7 @@ class DetectionWorker:
         while not self._stop_event.is_set():
             if not self.settings.running:
                 # Paused (Stop pressed) — idle without burning camera/CPU
+                self._gpio.update(eyes_closed=False, yawn=False, no_face=False)
                 time.sleep(0.1)
                 continue
 
@@ -116,6 +121,13 @@ class DetectionWorker:
                 self._alarm.start()
             else:
                 self._alarm.stop()
+
+            # ── GPIO: RED = eyes_closed OR no_face, GREEN = yawn ──────
+            self._gpio.update(
+                eyes_closed = warnings["eyes_closed"],
+                yawn        = warnings["yawn"],
+                no_face     = warnings["no_face"],
+            )
 
             totals = dict(
                 eyes_closed_events = self._detector.total_eyes_closed_events,

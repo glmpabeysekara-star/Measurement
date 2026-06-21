@@ -53,6 +53,19 @@ SENSITIVITY_PRESETS = {
 }
 SENSITIVITY_DEFAULT = "Medium"
 
+# ── GPIO warning outputs ─────────────────────────────────────
+# Two 3.3V logic-level outputs, HIGH while the corresponding
+# warning is active, LOW otherwise. Pins chosen to avoid every
+# pin used by the piscreen display + XPT2046 touch overlay, and
+# to sit on the header's OUTER row (odd physical pins) for easy
+# jumper-wire access despite the display board on top.
+#
+# RED:   GPIO22 (physical pin 15) — eyes_closed OR no_face
+# GREEN: GPIO5  (physical pin 29) — yawn
+GPIO_ENABLED    = True
+GPIO_RED_PIN    = 22   # BCM numbering — physical pin 15
+GPIO_GREEN_PIN  = 5    # BCM numbering — physical pin 29
+
 # ── Warning sound ──────────────────────────────────────────────
 BEEP_INTERVAL_SEC = 0.4
 ALARM_SOUND_PATH  = None        # optional WAV/MP3 path; None → system beep

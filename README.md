@@ -41,15 +41,18 @@ annotated-video experience for free — this code doesn't change.
 │  - camera capture      │  state   │  - snapshot panel       │
 │  - MediaPipe detector  │ ◀─────── │  - status indicators    │
 │  - alarm beeping       │ Settings │  - touch buttons        │
+│  - GPIO RED/GREEN out  │          │                        │
 └─────────────────────┘         └──────────────────────┘
 ```
 
 - `shared.py` — `Settings` (GUI → detector) and `AppState`
   (detector → GUI), both thread-safe via locks.
-- `worker.py` — owns the camera, detector, and alarm; runs its own
-  loop on a background `threading.Thread`.
+- `worker.py` — owns the camera, detector, alarm, and GPIO outputs;
+  runs its own loop on a background `threading.Thread`.
 - `detector.py` — same EAR/MAR/no-face logic as before, but headless
   (no OpenCV drawing — the GUI does all rendering).
+- `gpio_output.py` — drives the RED/GREEN GPIO pins based on
+  warning state; falls back to a safe no-op mode off-Pi.
 - `gui.py` — Tkinter interface; polls `AppState` every
   `config.GUI_POLL_MS` and redraws.
 - `main.py` — wires it together and starts `root.mainloop()`.
@@ -66,7 +69,8 @@ pi_gui_drowsiness/
 ├── detector.py          ← EAR/MAR/no-face detection logic (headless)
 ├── shared.py            ← Thread-safe Settings + AppState
 ├── alarm.py             ← Continuous short-beep sound
-├── config.py            ← All settings (screen size, thresholds, etc.)
+├── gpio_output.py       ← RED/GREEN GPIO warning pin outputs
+├── config.py            ← All settings (screen size, thresholds, GPIO pins, etc.)
 └── download_model.py    ← Auto-downloads face_landmarker.task
 ```
 
@@ -141,12 +145,66 @@ to save under `/etc/X11/xorg.conf.d/`.
 
 ---
 
+## GPIO Warning Outputs (RED / GREEN)
+
+Two 3.3V logic-level GPIO outputs go HIGH while their warning is
+active and LOW otherwise — for driving an LED, a transistor-driven
+relay/buzzer module, or an opto-isolator input.
+
+| Warning | BCM GPIO | Physical pin | Logic |
+|---|---|---|---|
+| **RED** | GPIO22 | **Pin 15** | HIGH while `eyes_closed` OR `no_face` |
+| **GREEN** | GPIO5 | **Pin 29** | HIGH while `yawn` |
+
+Both pins were chosen specifically to avoid every pin the
+`piscreen` display/touch overlay uses (SPI bus, chip-selects,
+reset, backlight, touch IRQ — 9 pins total), and both sit on the
+header's **outer row** (odd-numbered physical pins) so they're
+reachable with jumper wires even with the display board mounted
+on top.
+
+```
+Pin 15 (GPIO22) ──► RED warning   (eyes closed / no face)
+Pin 29 (GPIO5)  ──► GREEN warning (yawning)
+Pin 6, 9, 14, 20, 25, 30, 34, or 39 ──► any GND pin for your circuit's return path
+```
+
+> **3.3V logic only.** These pins are not 5V tolerant and cannot
+> drive a load directly — wire each one into an LED (with a
+> current-limiting resistor, e.g. 330Ω), the trigger input of a
+> transistor/relay driver module, or an opto-isolator, exactly as
+> you'd wire any other Pi GPIO output.
+
+### Software setup
+```bash
+sudo apt install -y python3-gpiozero
+# gpiozero is also installed by default on the Raspberry Pi OS
+# desktop image — the apt install above is just to be sure.
+```
+`gpiozero` (backed by `lgpio`) is the Pi-recommended GPIO library
+on current Raspberry Pi OS and is what `gpio_output.py` uses.
+
+### Toggle on/off
+Set `GPIO_ENABLED = False` in `config.py` to disable both outputs
+entirely (e.g. while testing off a Pi) without touching any other
+code — `gpio_output.py` automatically falls back to a no-op
+simulated mode if `gpiozero` or real GPIO hardware isn't available,
+so the rest of the app keeps working normally either way.
+
+### Changing pins
+If you need different pins later, edit `GPIO_RED_PIN` and
+`GPIO_GREEN_PIN` in `config.py` (BCM numbering) — just make sure
+whatever you pick still avoids the display's 9 reserved pins
+(BCM 7, 8, 9, 10, 11, 17, 22, 24, 25).
+
+---
+
 ## Software Setup
 
 ```bash
 # System packages (Pillow + Tk are usually preinstalled on Pi OS,
 # but make sure):
-sudo apt install -y python3-tk python3-pil python3-pil.imagetk
+sudo apt install -y python3-tk python3-pil python3-pil.imagetk python3-gpiozero
 
 # Python packages
 pip install mediapipe opencv-python scipy numpy Pillow --break-system-packages
