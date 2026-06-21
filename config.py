@@ -82,7 +82,7 @@ FRAME_HEIGHT = 240
 SCREEN_WIDTH   = 480
 SCREEN_HEIGHT  = 320
 FULLSCREEN     = True           # kiosk mode; set False while developing on a desktop
-SNAPSHOT_FPS   = 1.0            # how often the camera panel image updates (frames/sec)
+SNAPSHOT_FPS   = 10.0            # how often the camera panel image updates (frames/sec)
 GUI_POLL_MS    = 150            # how often the GUI refreshes text/color state (milliseconds)
 
 WINDOW_TITLE = "Drowsiness Monitor"
