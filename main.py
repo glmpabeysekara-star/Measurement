@@ -6,8 +6,7 @@
 #  Tkinter GUI runs on the main thread (required by Tk) and
 #  polls shared state every config.GUI_POLL_MS (gui.py).
 #
-#  Run:  python main.py
-#  Kiosk autostart: see README.md for the systemd service setup.
+#  Run manually each time:  python main.py
 # ─────────────────────────────────────────────────────────────
 
 import tkinter as tk
@@ -20,7 +19,7 @@ def main():
     root = tk.Tk()
     app = DrowsinessGUI(root)
 
-    # Auto-start detection immediately on launch (kiosk behaviour) —
+    # Start detection immediately when the app launches —
     # remove this line if you'd rather require a manual Start press.
     app.worker.start()
 

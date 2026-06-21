@@ -271,48 +271,24 @@ no restart needed.
 
 ---
 
-## Auto-Launch on Boot (Kiosk Mode)
+## Running the App
 
-Raspberry Pi OS Bookworm changed how desktop autostart works — a
-GUI app needs an actual logged-in graphical session before it can
-display anything, so a plain systemd service (which runs before
-any display exists) will fail silently. Use the desktop autostart
-method instead:
+This app is launched manually — there's no boot-time autostart.
+Each time you want to use it:
 
-### 1. Enable auto-login to the desktop
 ```bash
-sudo raspi-config
-# System Options → Boot / Auto Login → Desktop Autologin
+cd /path/to/pi_gui_drowsiness
+python main.py
 ```
 
-### 2. Create an autostart entry
-```bash
-mkdir -p ~/.config/autostart
-nano ~/.config/autostart/drowsiness-monitor.desktop
-```
+It opens full-screen (`config.FULLSCREEN = True`) on whichever
+display is active — the SPI panel if that's your primary display,
+or HDMI if connected. Press `Esc` or use the on-screen Shutdown
+button to exit.
 
-Paste, adjusting the path to wherever you placed this project:
-```ini
-[Desktop Entry]
-Type=Application
-Name=Drowsiness Monitor
-Exec=/usr/bin/python3 /home/pi/pi_gui_drowsiness/main.py
-X-GNOME-Autostart-enable=true
-```
-
-### 3. Reboot to test
-```bash
-sudo reboot
-```
-The app should launch full-screen automatically once the desktop
-loads.
-
-### Alternative: systemd (if you disable the desktop entirely)
-If you're running a minimal X11 session with no desktop environment
-at all (rare for a kiosk display), a systemd user service tied to
-`graphical.target` can work instead — but the `.desktop` autostart
-method above is more reliable across Pi OS versions and is what
-most kiosk-display projects use in practice.
+If you'd like it to launch automatically when the Pi boots later,
+that's a small addition (a desktop autostart entry) — let me know
+and it can be added back in.
 
 ---
 
