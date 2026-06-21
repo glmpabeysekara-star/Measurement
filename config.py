@@ -63,8 +63,8 @@ SENSITIVITY_DEFAULT = "Medium"
 # RED:   GPIO22 (physical pin 15) — eyes_closed OR no_face
 # GREEN: GPIO5  (physical pin 29) — yawn
 GPIO_ENABLED    = True
-GPIO_RED_PIN    = 22   # BCM numbering — physical pin 15
-GPIO_GREEN_PIN  = 5    # BCM numbering — physical pin 29
+GPIO_RED_PIN    = 20   # BCM numbering — physical pin 38
+GPIO_GREEN_PIN  = 21   # BCM numbering — physical pin 40
 
 # ── Warning sound ──────────────────────────────────────────────
 BEEP_INTERVAL_SEC = 0.4
